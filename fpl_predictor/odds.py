@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import requests
+import os
 from scipy.stats import poisson
 from scipy.optimize import brentq
 
@@ -35,7 +36,7 @@ def implied_total_goals(prob_over_2_5):
 def load_historical_odds(base_path, odds_seasons, season_label_map):
     odds_dfs = []
     for s in odds_seasons:
-        path = f"{base_path}\\odds{s}.csv"
+        path = os.path.join(base_path, f'odds{s}.csv')
         d = pd.read_csv(path)
         d['season'] = season_label_map[s]
         odds_dfs.append(d)

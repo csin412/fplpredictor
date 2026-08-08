@@ -5,7 +5,7 @@ import data_loader, features, odds, train, predict
 
 load_dotenv()
 BASE_PATH = os.environ.get("FPL_DATA_PATH", r"C:\Users\charl\Fantasy-Premier-League\data")
-ODDS_BASE_PATH = r"C:\Users\charl\Documents\FPLPredictor\data\odds\Football-Data"
+ODDS_BASE_PATH = os.environ.get("ODDS_DATA_PATH", r"C:\Users\charl\Football-Data")
 SEASONS = ['2021-22', '2022-23', '2023-24', '2024-25', '2025-26']
 ODDS_SEASONS = ['2122', '2223', '2324', '2425', '2526']
 
