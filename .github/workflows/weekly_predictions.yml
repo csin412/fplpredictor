@@ -27,11 +27,6 @@ jobs:
           FPL_DATA_PATH: /tmp/fpl-data/data
         run: python fpl_predictor/pipeline.py
 
-      - name: Run weekly prediction
-        env:
-          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
-        run: python fpl_predictor/pipeline.py
-
       - name: Commit updated database
         run: |
           git config user.name "github-actions"
