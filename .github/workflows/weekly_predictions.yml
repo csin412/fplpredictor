@@ -1,0 +1,32 @@
+name: Weekly FPL Predictions
+
+on:
+  schedule:
+    - cron: '0 9 * * 5'   # every Friday 9am UTC — adjust to land before deadline
+  workflow_dispatch:        # lets you trigger it manually from the GitHub UI too
+
+jobs:
+  predict:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run weekly prediction
+        env:
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+        run: python fpl_predictor/pipeline.py
+
+      - name: Commit updated database
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add data/fpl.db
+          git commit -m "Weekly predictions: $(date +'%Y-%m-%d')" || echo "No changes to commit"
+          git push
