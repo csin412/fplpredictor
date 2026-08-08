@@ -5,6 +5,9 @@ on:
     - cron: '0 9 * * 4'   # every Friday 9am UTC — adjust to land before deadline
   workflow_dispatch:        # lets you trigger it manually from the GitHub UI too
 
+permissions:
+  contents: write
+
 jobs:
   predict:
     runs-on: ubuntu-latest
