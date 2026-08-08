@@ -1,10 +1,11 @@
 import os
+import db
 from dotenv import load_dotenv
 import data_loader, features, odds, train, predict
 
 load_dotenv()
-BASE_PATH = r"C:\Users\charl\Fantasy-Premier-League\data"
-ODDS_BASE_PATH = r"C:\Users\charl\Football-Data"
+BASE_PATH = os.environ.get("FPL_DATA_PATH", r"C:\Users\charl\Fantasy-Premier-League\data")
+ODDS_BASE_PATH = r"C:\Users\charl\Documents\FPLPredictor\data\odds\Football-Data"
 SEASONS = ['2021-22', '2022-23', '2023-24', '2024-25', '2025-26']
 ODDS_SEASONS = ['2122', '2223', '2324', '2425', '2526']
 
@@ -46,7 +47,9 @@ def run_weekly_prediction():
     return predict.predict_next_gameweek(next_week_players), next_gw
 
 if __name__ == "__main__":
+    db.init_db()
     predictions, gw = run_weekly_prediction()
+    db.log_predictions(predictions, gw)
     print(f"\n=== Top 10 predicted 6+ picks, GW{gw} ===")
     print(predictions[['name', 'position', 'team', 'opponent_team_name', 'prob_6plus']]
           .sort_values('prob_6plus', ascending=False).head(10))

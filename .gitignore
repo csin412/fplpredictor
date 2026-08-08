@@ -1,8 +1,2 @@
-.env
-__pycache__/
-*.pyc
-models/*.pkl
-data/
-.ipynb_checkpoints/
-venv/
-Untitled.ipynb
+data/*.csv
+!data/fpl.db
