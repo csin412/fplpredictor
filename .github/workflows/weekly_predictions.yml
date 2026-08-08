@@ -2,7 +2,7 @@ name: Weekly FPL Predictions
 
 on:
   schedule:
-    - cron: '0 9 * * 5'   # every Friday 9am UTC — adjust to land before deadline
+    - cron: '0 9 * * 4'   # every Friday 9am UTC — adjust to land before deadline
   workflow_dispatch:        # lets you trigger it manually from the GitHub UI too
 
 jobs:
