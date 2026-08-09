@@ -1,3 +1,4 @@
 data/*.csv
 !data/fpl.db
 test.py
+debug.py
