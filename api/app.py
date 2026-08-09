@@ -7,7 +7,7 @@ app = FastAPI(title="FPL Predictor API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # tighten this to your actual frontend domain once deployed
+    allow_origins=["https://fplpredictor.vercel.app"],
     allow_methods=["GET"],
     allow_headers=["*"],
 )
