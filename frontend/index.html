@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>FPL Predictor</title>
+  <style>
+    body { font-family: sans-serif; max-width: 700px; margin: 40px auto; padding: 0 20px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { text-align: left; padding: 8px; border-bottom: 1px solid #ddd; }
+    button { margin-right: 8px; padding: 6px 12px; }
+  </style>
+</head>
+<body>
+  <h1>FPL Predictor</h1>
+  <div>
+    <button onclick="load('6plus')">6+ Points</button>
+    <button onclick="load('5plus')">5+ Points</button>
+  </div>
+  <h2 id="gw-label"></h2>
+  <table id="results">
+    <thead><tr><th>Player</th><th>Team</th><th>Opponent</th><th>Prob</th></tr></thead>
+    <tbody id="results-body"></tbody>
+  </table>
+
+  <script>
+    const API_URL = "https://fpl-predictor-api-3njm.onrender.com";
+
+    async function load(threshold) {
+      const res = await fetch(`${API_URL}/predictions/latest?threshold=${threshold}`);
+      const data = await res.json();
+      document.getElementById('gw-label').innerText = `Gameweek ${data.gameweek}`;
+      const body = document.getElementById('results-body');
+      body.innerHTML = '';
+      data.predictions.forEach(p => {
+        const row = document.createElement('tr');
+        const prob = (p[`prob_${threshold}`] * 100).toFixed(1);
+        row.innerHTML = `<td>${p.name}</td><td>${p.team}</td><td>${p.was_home ? 'vs' : '@'} ${p.opponent_team_name}</td><td>${prob}%</td>`;
+        body.appendChild(row);
+      });
+    }
+
+    load('6plus');
+  </script>
+</body>
+</html>
