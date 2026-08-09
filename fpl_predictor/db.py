@@ -29,6 +29,9 @@ def init_db():
 
 def log_predictions(predictions_df, gw):
     conn = get_connection()
+    conn.execute("DELETE FROM predictions_log WHERE gw = ?", (gw,))
+    conn.commit()
+
     log_rows = predictions_df[['name', 'team', 'opponent_team_name', 'was_home',
                                  'prob_5plus', 'prob_6plus']].copy()
     log_rows['gw'] = gw
