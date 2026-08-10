@@ -2,3 +2,4 @@ data/*.csv
 !data/fpl.db
 test.py
 debug.py
+fpl_predictor/debug2.py

@@ -1,5 +1,6 @@
 import joblib
 import pandas as pd
+import data_loader
 from features import FEATURE_COLS
 
 def build_next_gw_fixtures(bootstrap, fixtures_raw):
@@ -24,12 +25,28 @@ def build_next_gw_fixtures(bootstrap, fixtures_raw):
 
     return pd.concat([home_side, away_side], ignore_index=True), next_gw
 
-def build_next_week_players(full_df, team_df, next_gw_fixtures):
+def build_next_week_players(full_df, team_df, next_gw_fixtures, current_team_lookup=None):
     latest_season = full_df['season'].max()
     latest_player_rows = (
         full_df[full_df['season'] == latest_season]
         .sort_values(['name', 'round']).groupby('name').tail(1).copy()
     )
+
+    if current_team_lookup is not None:
+        lookup = current_team_lookup[['name', 'team']].rename(columns={'team': 'current_team'}).copy()
+        lookup['_key'] = lookup['name'].map(data_loader.normalize_name)
+        lookup = lookup.drop_duplicates(subset='_key')  # guard against name collisions
+
+        latest_player_rows['_key'] = latest_player_rows['name'].map(data_loader.normalize_name)
+        latest_player_rows = latest_player_rows.merge(lookup[['_key', 'current_team']], on='_key', how='left')
+
+        unmatched = latest_player_rows['current_team'].isna()
+        if unmatched.any():
+            print(f"Warning: {unmatched.sum()} players had no current-team match, "
+                f"keeping last-known team: {latest_player_rows.loc[unmatched, 'name'].tolist()[:15]}")
+
+        latest_player_rows['team'] = latest_player_rows['current_team'].fillna(latest_player_rows['team'])
+        latest_player_rows = latest_player_rows.drop(columns=['current_team', '_key'])
 
     next_week_players = latest_player_rows.drop(columns=['opponent_team_name', 'was_home']).merge(
         next_gw_fixtures, on='team', how='inner')

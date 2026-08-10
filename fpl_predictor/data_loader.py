@@ -1,6 +1,7 @@
 import os
 import time
 import pandas as pd
+import unicodedata
 import requests
 
 SEASONS = ['2021-22', '2022-23', '2023-24', '2024-25', '2025-26']
@@ -129,3 +130,18 @@ def fetch_current_season_gameweek_data(season_label='2026-27'):
         return pd.DataFrame(columns=expected_cols)
 
     return pd.DataFrame(all_rows)
+
+def get_current_player_teams(bootstrap):
+    """Maps each player's full name to their CURRENT team, straight from bootstrap.
+    Used to override stale historical team assignments after transfers."""
+    players = pd.DataFrame(bootstrap['elements'])
+    teams = pd.DataFrame(bootstrap['teams'])[['id', 'name']].rename(columns={'id': 'team_id', 'name': 'team_name'})
+    players = players.merge(teams, left_on='team', right_on='team_id')
+    players['name'] = players['first_name'] + ' ' + players['second_name']
+    return players[['name', 'team_name']].rename(columns={'team_name': 'team'})
+
+def normalize_name(name):
+    if pd.isna(name):
+        return name
+    n = unicodedata.normalize('NFKD', str(name)).encode('ascii', 'ignore').decode('ascii')
+    return ' '.join(n.lower().split())

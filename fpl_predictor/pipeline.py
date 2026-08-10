@@ -62,12 +62,17 @@ def run_weekly_prediction():
     bootstrap = data_loader.fetch_fpl_bootstrap()
     fixtures_raw = data_loader.fetch_fpl_fixtures()
 
+    current_team_lookup = data_loader.get_current_player_teams(bootstrap)   # NEW
+
     next_gw_fixtures, next_gw = predict.build_next_gw_fixtures(bootstrap, fixtures_raw)
-    next_week_players = predict.build_next_week_players(full_df, team_df, next_gw_fixtures)
+    next_week_players = predict.build_next_week_players(
+        full_df, team_df, next_gw_fixtures, current_team_lookup            # pass it through
+    )
 
     live_team_odds = odds.get_live_team_odds(os.environ.get("ODDS_API_KEY"))
     next_week_players = predict.attach_live_odds(next_week_players, live_team_odds)
 
+    print(next_gw)
     return predict.predict_next_gameweek(next_week_players), next_gw
 
 
@@ -75,6 +80,7 @@ if __name__ == "__main__":
     db.init_db()
     predictions, gw = run_weekly_prediction()
     db.log_predictions(predictions, gw)
+    db.delete_dupes()
 
     print(f"\n=== Top 10 predicted 6+ picks, GW{gw} ===")
     print(predictions[['name', 'position', 'team', 'opponent_team_name', 'prob_6plus']]
