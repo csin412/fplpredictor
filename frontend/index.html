@@ -24,8 +24,10 @@
   <script>
     const API_URL = "https://fpl-predictor-api-3njm.onrender.com";
 
-    async function load(threshold) {
+  async function load(threshold) {
+    try {
       const res = await fetch(`${API_URL}/predictions/latest?threshold=${threshold}`);
+      if (!res.ok) throw new Error(`API returned ${res.status}`);
       const data = await res.json();
       document.getElementById('gw-label').innerText = `Gameweek ${data.gameweek}`;
       const body = document.getElementById('results-body');
@@ -36,7 +38,11 @@
         row.innerHTML = `<td>${p.name}</td><td>${p.team}</td><td>${p.was_home ? 'vs' : '@'} ${p.opponent_team_name}</td><td>${prob}%</td>`;
         body.appendChild(row);
       });
+    } catch (err) {
+      document.getElementById('gw-label').innerText = 'Failed to load predictions';
+      console.error(err);
     }
+  }
 
     load('6plus');
   </script>

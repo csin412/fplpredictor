@@ -7,7 +7,7 @@ app = FastAPI(title="FPL Predictor API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://fplpredictor-lovat.vercel.app/"],
+    allow_origins=["https://fplpredictor-lovat.vercel.app"],
     allow_methods=["GET"],
     allow_headers=["*"],
 )
