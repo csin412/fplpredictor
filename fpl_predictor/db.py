@@ -15,6 +15,7 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             gw INTEGER NOT NULL,
+            position TEXT,
             team TEXT,
             opponent_team_name TEXT,
             was_home INTEGER,
@@ -51,20 +52,26 @@ def migrate_add_unique_constraint():
     conn.commit()
     conn.close()
 
+def migrate_add_position_column():
+    conn = get_connection()
+    conn.execute("ALTER TABLE predictions_log ADD COLUMN position TEXT")
+    conn.commit()
+    conn.close()
+
 def log_predictions(predictions_df, gw):
     conn = get_connection()
-    log_rows = predictions_df[['name', 'team', 'opponent_team_name', 'was_home',
+    log_rows = predictions_df[['name', 'team', 'position', 'opponent_team_name', 'was_home',
                                  'prob_5plus', 'prob_6plus']].drop_duplicates(subset=['name']).copy()
     log_rows['gw'] = gw
 
     conn.executemany("""
-        INSERT INTO predictions_log (name, gw, team, opponent_team_name, was_home, prob_5plus, prob_6plus, run_timestamp)
-        VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        INSERT INTO predictions_log (name, gw, position, team, opponent_team_name, was_home, prob_5plus, prob_6plus, run_timestamp)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
         ON CONFLICT(name, gw) DO UPDATE SET
-            team=excluded.team, opponent_team_name=excluded.opponent_team_name,
+            position=excluded.position, team=excluded.team, opponent_team_name=excluded.opponent_team_name,
             was_home=excluded.was_home, prob_5plus=excluded.prob_5plus,
             prob_6plus=excluded.prob_6plus, run_timestamp=excluded.run_timestamp
-    """, log_rows[['name', 'gw', 'team', 'opponent_team_name', 'was_home', 'prob_5plus', 'prob_6plus']].values.tolist())
+    """, log_rows[['name', 'gw', 'position', 'team', 'opponent_team_name', 'was_home', 'prob_5plus', 'prob_6plus']].values.tolist())
     conn.commit()
     conn.close()
     print(f"Logged {len(log_rows)} predictions for GW{gw} to {DB_PATH}")
