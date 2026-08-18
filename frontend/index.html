@@ -31,7 +31,7 @@
 
   <script>
     const API_URL = "https://fpl-predictor-api-3njm.onrender.com";
-    const POSITIONS = {'GK', 'DEF', 'MID', 'FWD'};
+    const POSITIONS = ['GK', 'DEF', 'MID', 'FWD'];
     let currentThreshold = '6plus';
 
     function renderTable(predictions, threshold, title) {
@@ -45,7 +45,7 @@
           <thead>
             <tr><th>Player</th><th>Team</th><th>Position</th><th>Fixture</th><th>Probability</th></tr>
           </thead>
-          <tbody id="results-body">
+          <tbody>
             ${rows}
           </tbody>
         </table>
