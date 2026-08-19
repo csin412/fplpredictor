@@ -37,7 +37,7 @@
     function renderTable(predictions, threshold, title) {
       const rows = predictions.map(p => {
         const prob = (p[`prob_${threshold}`] * 100).toFixed(1);
-        const price = p.price != null ? '£${p.price.toFixed(1)}m' : '-';
+        const price = p.price != null ? `£${p.price.toFixed(1)}m` : '-';
         return `<tr><td>${p.name}</td><td>${p.team}</td><td>${p.position}</td><td>${price}</td><td>${p.was_home ? 'vs' : '@'} ${p.opponent_team_name}</td><td>${prob}%</td></tr>`;
       }).join('');
       return `
