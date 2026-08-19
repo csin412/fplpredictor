@@ -55,12 +55,29 @@ def build_next_week_players(full_df, team_df, next_gw_fixtures, current_team_loo
         team_df.sort_values(['team', 'season', 'round']).groupby('team').tail(1)
         [['team', 'rolling_5_goals_for', 'rolling_5_goals_against']]
         .rename(columns={'team': 'opponent_team_name',
-                          'rolling_5_goals_for': 'opponent_rolling_5_goals_for',
-                          'rolling_5_goals_against': 'opponent_rolling_5_goals_against'})
+                        'rolling_5_goals_for': 'opponent_rolling_5_goals_for',
+                        'rolling_5_goals_against': 'opponent_rolling_5_goals_against'})
     )
     next_week_players = next_week_players.drop(
         columns=['opponent_rolling_5_goals_for', 'opponent_rolling_5_goals_against']
     ).merge(latest_team_stats, on='opponent_team_name', how='left')
+
+    # Newly promoted teams (or anyone with no rolling history yet) have no row in
+    # team_df, which leaves opponent strength as NaN and silently drops every
+    # player facing them via the FEATURE_COLS dropna downstream. Fall back to the
+    # league-average opponent strength instead of dropping these players.
+    league_avg_for = latest_team_stats['opponent_rolling_5_goals_for'].mean()
+    league_avg_against = latest_team_stats['opponent_rolling_5_goals_against'].mean()
+
+    missing_opp = next_week_players['opponent_rolling_5_goals_for'].isna()
+    if missing_opp.any():
+        print(f"Warning: {missing_opp.sum()} players have an opponent with no rolling history "
+            f"(likely newly promoted): {next_week_players.loc[missing_opp, 'opponent_team_name'].unique().tolist()}. "
+            f"Using league-average opponent strength as a fallback.")
+
+    next_week_players['opponent_rolling_5_goals_for'] = next_week_players['opponent_rolling_5_goals_for'].fillna(league_avg_for)
+    next_week_players['opponent_rolling_5_goals_against'] = next_week_players['opponent_rolling_5_goals_against'].fillna(league_avg_against)
+
     return next_week_players
 
 def attach_live_odds(next_week_players, live_team_odds):

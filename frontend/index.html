@@ -16,6 +16,15 @@
   <div class="controls">
     <button onclick="load('6plus')">6+ Points</button>
     <button onclick="load('5plus')">5+ Points</button>
+    <label>Position:
+      <select id="positionSelect" onchange="load(currentThreshold)">
+        <option value="ALL">All</option>
+        <option value="GK">Goalkeepers</option>
+        <option value="DEF">Defenders</option>
+        <option value="MID">Midfielders</option>
+        <option value="FWD">Forwards</option>
+      </select>
+    </label>
     <label><input type="checkbox" id="byPosition" onchange="load(currentThreshold)"> Group by position</label>
     <label>Show:
       <select id="limitSelect" onchange="load(currentThreshold)">
@@ -58,11 +67,21 @@
       const container = document.getElementById('results-container');
       const byPosition = document.getElementById('byPosition').checked;
       const limit = document.getElementById('limitSelect').value;
+      const positionFilter = document.getElementById('positionSelect').value;
+
       try {
-        if (byPosition) {
-          const results = await Promise.all(Array.from(POSITIONS).map(pos => fetch(`${API_URL}/predictions/latest?threshold=${threshold}&position=${pos}&limit=${limit}`).then(res => res.json())));
+        if (positionFilter !== 'ALL') {
+          // Specific position picked — one fetch, one table, ignore the "group by" checkbox
+          const res = await fetch(`${API_URL}/predictions/latest?threshold=${threshold}&position=${positionFilter}&limit=${limit}`);
+          const data = await res.json();
+          document.getElementById('gw-label').innerText = `Gameweek ${data.gameweek}`;
+          container.innerHTML = renderTable(data.predictions, threshold, positionFilter);
+        } else if (byPosition) {
+          const results = await Promise.all(POSITIONS.map(pos =>
+            fetch(`${API_URL}/predictions/latest?threshold=${threshold}&position=${pos}&limit=${limit}`).then(res => res.json())
+          ));
           document.getElementById('gw-label').innerText = `Gameweek ${results[0].gameweek}`;
-          container.innerHTML = results.map(r => renderTable(r.predictions, threshold, r.position)).join('');
+          container.innerHTML = results.map((r, i) => renderTable(r.predictions, threshold, POSITIONS[i])).join('');
         } else {
           const res = await fetch(`${API_URL}/predictions/latest?threshold=${threshold}&limit=${limit}`);
           const data = await res.json();
