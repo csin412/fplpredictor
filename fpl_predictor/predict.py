@@ -33,12 +33,12 @@ def build_next_week_players(full_df, team_df, next_gw_fixtures, current_team_loo
     )
 
     if current_team_lookup is not None:
-        lookup = current_team_lookup[['name', 'team']].rename(columns={'team': 'current_team'}).copy()
+        lookup = current_team_lookup[['name', 'team', 'price']].rename(columns={'team': 'current_team'}).copy()
         lookup['_key'] = lookup['name'].map(data_loader.normalize_name)
         lookup = lookup.drop_duplicates(subset='_key')  # guard against name collisions
 
         latest_player_rows['_key'] = latest_player_rows['name'].map(data_loader.normalize_name)
-        latest_player_rows = latest_player_rows.merge(lookup[['_key', 'current_team']], on='_key', how='left')
+        latest_player_rows = latest_player_rows.merge(lookup[['_key', 'current_team', 'price']], on='_key', how='left')
 
         unmatched = latest_player_rows['current_team'].isna()
         if unmatched.any():

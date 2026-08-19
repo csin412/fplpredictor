@@ -48,7 +48,7 @@ def latest_predictions(threshold: str = "6plus", limit: int = 10, position: str 
     params.append(limit)
 
     rows = query_db(f"""
-        SELECT name, team, position, opponent_team_name, was_home, prob_{threshold}, gw
+        SELECT name, team, position, opponent_team_name, was_home, price, prob_{threshold}, gw
         FROM predictions_log
         {where}
         ORDER BY prob_{threshold} DESC
@@ -67,7 +67,7 @@ def predictions_for_gw(gw: int, threshold: str = "6plus", limit: int = 10, posit
     params.append(limit)
 
     rows = query_db(f"""
-        SELECT name, team, position, opponent_team_name, was_home, prob_{threshold}, gw
+        SELECT name, team, position, opponent_team_name, was_home, price, prob_{threshold}, gw
         FROM predictions_log
         {where}
         ORDER BY prob_{threshold} DESC

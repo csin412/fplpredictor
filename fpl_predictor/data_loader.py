@@ -138,7 +138,8 @@ def get_current_player_teams(bootstrap):
     teams = pd.DataFrame(bootstrap['teams'])[['id', 'name']].rename(columns={'id': 'team_id', 'name': 'team_name'})
     players = players.merge(teams, left_on='team', right_on='team_id')
     players['name'] = players['first_name'] + ' ' + players['second_name']
-    return players[['name', 'team_name']].rename(columns={'team_name': 'team'})
+    players['price'] = players['now_cost'] / 10
+    return players[['name', 'team_name', 'price']].rename(columns={'team_name': 'team'})
 
 def normalize_name(name):
     if pd.isna(name):

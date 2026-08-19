@@ -19,6 +19,7 @@ def init_db():
             team TEXT,
             opponent_team_name TEXT,
             was_home INTEGER,
+            price REAL,
             prob_5plus REAL,
             prob_6plus REAL,
             actual_points INTEGER,
@@ -58,20 +59,26 @@ def migrate_add_position_column():
     conn.commit()
     conn.close()
 
+def migrate_add_price_column():
+    conn = get_connection()
+    conn.execute("ALTER TABLE predictions_log ADD COLUMN price REAL")
+    conn.commit()
+    conn.close()
+
 def log_predictions(predictions_df, gw):
     conn = get_connection()
-    log_rows = predictions_df[['name', 'team', 'position', 'opponent_team_name', 'was_home',
+    log_rows = predictions_df[['name', 'team', 'position', 'opponent_team_name', 'was_home', 'price',
                                  'prob_5plus', 'prob_6plus']].drop_duplicates(subset=['name']).copy()
     log_rows['gw'] = gw
 
     conn.executemany("""
-        INSERT INTO predictions_log (name, gw, position, team, opponent_team_name, was_home, prob_5plus, prob_6plus, run_timestamp)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        INSERT INTO predictions_log (name, gw, position, team, opponent_team_name, was_home, price, prob_5plus, prob_6plus, run_timestamp)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
         ON CONFLICT(name, gw) DO UPDATE SET
             position=excluded.position, team=excluded.team, opponent_team_name=excluded.opponent_team_name,
-            was_home=excluded.was_home, prob_5plus=excluded.prob_5plus,
+            was_home=excluded.was_home, price=excluded.price, prob_5plus=excluded.prob_5plus,
             prob_6plus=excluded.prob_6plus, run_timestamp=excluded.run_timestamp
-    """, log_rows[['name', 'gw', 'position', 'team', 'opponent_team_name', 'was_home', 'prob_5plus', 'prob_6plus']].values.tolist())
+    """, log_rows[['name', 'gw', 'position', 'team', 'opponent_team_name', 'was_home', 'price', 'prob_5plus', 'prob_6plus']].values.tolist())
     conn.commit()
     conn.close()
     print(f"Logged {len(log_rows)} predictions for GW{gw} to {DB_PATH}")
