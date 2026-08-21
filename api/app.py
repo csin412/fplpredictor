@@ -1,7 +1,10 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import sqlite3
+import sys
 import os
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import team_selector
 
