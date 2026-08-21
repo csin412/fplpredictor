@@ -40,7 +40,7 @@ def latest_predictions(threshold: str = "6plus", limit: int = 10, position: str 
     if latest_gw is None:
         raise HTTPException(404, "No predictions logged yet")
 
-    where = "WHERE gw = ?"
+    where = "WHERE gw = ? AND price IS NOT NULL"
     params = [latest_gw]
     if position:
         where += " AND position = ?"
@@ -59,7 +59,7 @@ def latest_predictions(threshold: str = "6plus", limit: int = 10, position: str 
 @app.get("/predictions/gw/{gw}")
 def predictions_for_gw(gw: int, threshold: str = "6plus", limit: int = 10, position: str | None = None):
     _validate(threshold, position, limit)
-    where = "WHERE gw = ?"
+    where = "WHERE gw = ? AND price IS NOT NULL"
     params = [gw]
     if position:
         where += " AND position = ?"

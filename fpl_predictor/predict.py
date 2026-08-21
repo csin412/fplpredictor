@@ -35,15 +35,18 @@ def build_next_week_players(full_df, team_df, next_gw_fixtures, current_team_loo
     if current_team_lookup is not None:
         lookup = current_team_lookup[['name', 'team', 'price']].rename(columns={'team': 'current_team'}).copy()
         lookup['_key'] = lookup['name'].map(data_loader.normalize_name)
-        lookup = lookup.drop_duplicates(subset='_key')  # guard against name collisions
+        lookup = lookup.drop_duplicates(subset='_key')
 
         latest_player_rows['_key'] = latest_player_rows['name'].map(data_loader.normalize_name)
         latest_player_rows = latest_player_rows.merge(lookup[['_key', 'current_team', 'price']], on='_key', how='left')
 
-        unmatched = latest_player_rows['current_team'].isna()
-        if unmatched.any():
-            print(f"Warning: {unmatched.sum()} players had no current-team match, "
-                f"keeping last-known team: {latest_player_rows.loc[unmatched, 'name'].tolist()[:15]}")
+        # No match in the live bootstrap = no current price = retired/left the league. Drop them.
+        no_current_price = latest_player_rows['price'].isna()
+        if no_current_price.any():
+            dropped = latest_player_rows.loc[no_current_price, 'name'].tolist()
+            print(f"Dropping {no_current_price.sum()} players with no current price (retired/left): "
+                  f"{dropped[:15]}{'...' if len(dropped) > 15 else ''}")
+            latest_player_rows = latest_player_rows[~no_current_price].copy()
 
         latest_player_rows['team'] = latest_player_rows['current_team'].fillna(latest_player_rows['team'])
         latest_player_rows = latest_player_rows.drop(columns=['current_team', '_key'])

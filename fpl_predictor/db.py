@@ -65,6 +65,14 @@ def migrate_add_price_column():
     conn.commit()
     conn.close()
 
+def delete_players_without_price():
+    conn = get_connection()
+    cur = conn.execute("DELETE FROM predictions_log WHERE price IS NULL")
+    deleted = cur.rowcount
+    conn.commit()
+    conn.close()
+    print(f"Deleted {deleted} players without price from predictions_log")
+
 def log_predictions(predictions_df, gw):
     conn = get_connection()
     log_rows = predictions_df[['name', 'team', 'position', 'opponent_team_name', 'was_home', 'price',
