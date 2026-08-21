@@ -4,7 +4,7 @@ probability of hitting the points threshold, subject to real FPL squad rules:
   - exactly 1 GK
   - 3-5 DEF, 2-5 MID, 1-3 FWD (10 outfield players total)
   - no more than 3 players from the same real-life team
- 
+
 Selection is a greedy fill per formation (highest probability first, skipping
 anyone who'd breach the 3-per-team cap), then the formation with the highest
 total probability wins. This isn't a guaranteed global optimum (a true optimum
@@ -14,6 +14,7 @@ exactly how most "team of the week" tools work in practice.
 
 POSITIONS = ('GK', 'DEF', 'MID', 'FWD')
 
+# All valid outfield splits: DEF 3-5, MID 2-5, FWD 1-3, summing to 10.
 FORMATIONS = [
     (d, m, f)
     for d in range(3, 6)
@@ -21,6 +22,7 @@ FORMATIONS = [
     for f in range(1, 4)
     if d + m + f == 10
 ]
+
 
 def _pick(candidates, count, team_counts, used_names):
     selected = []
@@ -36,6 +38,7 @@ def _pick(candidates, count, team_counts, used_names):
         team_counts[p['team']] = team_counts.get(p['team'], 0) + 1
     return selected
 
+
 def _select_for_formation(players_by_pos, formation, prob_key):
     d, m, f = formation
     team_counts = {}
@@ -48,16 +51,17 @@ def _select_for_formation(players_by_pos, formation, prob_key):
 
     squad = gk + defs + mids + fwds
     if len(squad) != 11:
-        return None
+        return None  # not enough eligible players to fill this formation
 
     return {
         'formation': f"{d}-{m}-{f}",
         'players': squad,
-        'total_prob': sum(p[prob_key] for p in squad)
+        'total_prob': sum(p[prob_key] for p in squad),
     }
 
+
 def build_team_of_week(rows, threshold):
-    """rows: list of dicts with at least name, team, position, and prob_{threshold}"""
+    """rows: list of dicts with at least name, team, position, and prob_{threshold}."""
     prob_key = f'prob_{threshold}'
     players_by_pos = {
         pos: sorted((r for r in rows if r['position'] == pos), key=lambda r: r[prob_key], reverse=True)

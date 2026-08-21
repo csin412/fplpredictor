@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import sqlite3
 import os
+
 import team_selector
 
 app = FastAPI(title="FPL Predictor API")
@@ -42,7 +43,6 @@ def _latest_gw():
 @app.get("/predictions/latest")
 def latest_predictions(threshold: str = "6plus", limit: int = 10, position: str | None = None):
     _validate(threshold, position, limit)
-
     latest_gw = _latest_gw()
 
     where = "WHERE gw = ? AND price IS NOT NULL"
@@ -81,14 +81,15 @@ def predictions_for_gw(gw: int, threshold: str = "6plus", limit: int = 10, posit
     return {"gameweek": gw, "threshold": threshold, "position": position, "predictions": rows}
 
 @app.get("/predictions/search")
-def search_player(name: str, threshold:str = "6plus"):
+def search_player(name: str, threshold: str = "6plus"):
     if threshold not in ("5plus", "6plus"):
         raise HTTPException(400, "threshold must be '5plus' or '6plus'")
     name = name.strip()
     if len(name) < 2:
-        raise HTTPException(400, "name must be at least 2 characters long")
+        raise HTTPException(400, "name must be at least 2 characters")
 
     latest_gw = _latest_gw()
+
     rows = query_db(f"""
         SELECT name, team, position, opponent_team_name, was_home, price, prob_5plus, prob_6plus, gw
         FROM predictions_log
@@ -104,6 +105,7 @@ def team_of_week(threshold: str = "6plus"):
         raise HTTPException(400, "threshold must be '5plus' or '6plus'")
 
     latest_gw = _latest_gw()
+
     rows = query_db(f"""
         SELECT name, team, position, opponent_team_name, was_home, price, prob_5plus, prob_6plus
         FROM predictions_log
@@ -113,13 +115,14 @@ def team_of_week(threshold: str = "6plus"):
 
     result = team_selector.build_team_of_week(rows, threshold)
     if result is None:
-        raise HTTPException(404, "No valid team could be built for the latest gameweek")
+        raise HTTPException(500, "Could not build a valid team of the week from current predictions")
+
     return {
         "gameweek": latest_gw,
         "threshold": threshold,
         "formation": result["formation"],
         "total_expected_probability": result["total_prob"],
-        "players": result["players"]
+        "players": result["players"],
     }
 
 @app.get("/")
