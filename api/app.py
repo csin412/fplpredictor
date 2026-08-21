@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import sqlite3
 import os
+import team_selector
 
 app = FastAPI(title="FPL Predictor API")
 
@@ -32,13 +33,17 @@ def query_db(sql, params=()):
     conn.close()
     return rows
 
+def _latest_gw():
+    latest_gw = query_db("SELECT MAX(gw) as gw FROM predictions_log")[0]['gw']
+    if latest_gw is None:
+        raise HTTPException(404, "No predictions logged yet")
+    return latest_gw
+
 @app.get("/predictions/latest")
 def latest_predictions(threshold: str = "6plus", limit: int = 10, position: str | None = None):
     _validate(threshold, position, limit)
 
-    latest_gw = query_db("SELECT MAX(gw) as gw FROM predictions_log")[0]['gw']
-    if latest_gw is None:
-        raise HTTPException(404, "No predictions logged yet")
+    latest_gw = _latest_gw()
 
     where = "WHERE gw = ? AND price IS NOT NULL"
     params = [latest_gw]
@@ -74,6 +79,48 @@ def predictions_for_gw(gw: int, threshold: str = "6plus", limit: int = 10, posit
         LIMIT ?
     """, tuple(params))
     return {"gameweek": gw, "threshold": threshold, "position": position, "predictions": rows}
+
+@app.get("/predictions/search")
+def search_player(name: str, threshold:str = "6plus"):
+    if threshold not in ("5plus", "6plus"):
+        raise HTTPException(400, "threshold must be '5plus' or '6plus'")
+    name = name.strip()
+    if len(name) < 2:
+        raise HTTPException(400, "name must be at least 2 characters long")
+
+    latest_gw = _latest_gw()
+    rows = query_db(f"""
+        SELECT name, team, position, opponent_team_name, was_home, price, prob_5plus, prob_6plus, gw
+        FROM predictions_log
+        WHERE gw = ? AND price IS NOT NULL AND name LIKE ?
+        ORDER BY prob_{threshold} DESC
+        LIMIT 10
+    """, (latest_gw, f"%{name}%"))
+    return {"gameweek": latest_gw, "query": name, "matches": rows}
+
+@app.get("/team-of-week")
+def team_of_week(threshold: str = "6plus"):
+    if threshold not in ("5plus", "6plus"):
+        raise HTTPException(400, "threshold must be '5plus' or '6plus'")
+
+    latest_gw = _latest_gw()
+    rows = query_db(f"""
+        SELECT name, team, position, opponent_team_name, was_home, price, prob_5plus, prob_6plus
+        FROM predictions_log
+        WHERE gw = ? AND price IS NOT NULL
+        ORDER BY prob_{threshold} DESC
+    """, (latest_gw,))
+
+    result = team_selector.build_team_of_week(rows, threshold)
+    if result is None:
+        raise HTTPException(404, "No valid team could be built for the latest gameweek")
+    return {
+        "gameweek": latest_gw,
+        "threshold": threshold,
+        "formation": result["formation"],
+        "total_expected_probability": result["total_prob"],
+        "players": result["players"]
+    }
 
 @app.get("/")
 def root():

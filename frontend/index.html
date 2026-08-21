@@ -9,39 +9,92 @@
     button { margin-right: 8px; padding: 6px 12px; }
     .controls {margin-bottom: 10px; }
     .controls > * { margin-right: 16px; }
+    .view { display: none; }
+    .view.active { display: block; }
+    nav.views button { margin-bottom: 20px; }
+    nav.views button.active { font-weight: bold; text-decoration: underline; }
+    #search-input { padding: 6px; width: 240px; }
+    .totw-pitch { display: flex; flex-direction: column; gap: 16px; margin-top: 16px; }
+    .totw-row { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+    .totw-card { border: 1px solid #ddd; border-radius: 8px; padding: 8px 12px; min-width: 130px; text-align: center; }
+    .totw-card .prob { font-weight: bold; }
+    .totw-formation { text-align: center; color: #555; margin-top: 4px; }
   </style>
 </head>
 <body>
   <h1>FPL Predictor</h1>
-  <div class="controls">
-    <button onclick="load('6plus')">6+ Points</button>
-    <button onclick="load('5plus')">5+ Points</button>
-    <label>Position:
-      <select id="positionSelect" onchange="load(currentThreshold)">
-        <option value="ALL">All</option>
-        <option value="GK">Goalkeepers</option>
-        <option value="DEF">Defenders</option>
-        <option value="MID">Midfielders</option>
-        <option value="FWD">Forwards</option>
-      </select>
-    </label>
-    <label><input type="checkbox" id="byPosition" onchange="load(currentThreshold)"> Group by position</label>
-    <label>Show:
-      <select id="limitSelect" onchange="load(currentThreshold)">
-        <option value="10">Top 10</option>
-        <option value="15">Top 15</option>
-        <option value="20">Top 20</option>
-        <option value="25">Top 25</option>
-      </select>
-    </label>
+
+  <nav class="views">
+    <button id="nav-predictions" onclick="switchView('predictions')">Predictions</button>
+    <button id="nav-search" onclick="switchView('search')">Search Player</button>
+    <button id="nav-totw" onclick="switchView('totw')">Team of the Week</button>
+  </nav>
+
+  <!-- PREDICTIONS VIEW -->
+  <div id="view-predictions" class="view active">
+    <div class="controls">
+      <button onclick="load('6plus')">6+ Points</button>
+      <button onclick="load('5plus')">5+ Points</button>
+      <label>Position:
+        <select id="positionSelect" onchange="load(currentThreshold)">
+          <option value="ALL">All</option>
+          <option value="GK">Goalkeepers</option>
+          <option value="DEF">Defenders</option>
+          <option value="MID">Midfielders</option>
+          <option value="FWD">Forwards</option>
+        </select>
+      </label>
+      <label><input type="checkbox" id="byPosition" onchange="load(currentThreshold)"> Group by position</label>
+      <label>Show:
+        <select id="limitSelect" onchange="load(currentThreshold)">
+          <option value="10">Top 10</option>
+          <option value="15">Top 15</option>
+          <option value="20">Top 20</option>
+          <option value="25">Top 25</option>
+        </select>
+      </label>
+    </div>
+    <h2 id="gw-label"></h2>
+    <div id="results-container"></div>
   </div>
-  <h2 id="gw-label"></h2>
-  <div id="results-container"></div>
+
+  <!-- SEARCH VIEW -->
+  <div id="view-search" class="view">
+    <div class="controls">
+      <input type="text" id="search-input" placeholder="Search player name..." onkeydown="if(event.key==='Enter') searchPlayer()">
+      <button onclick="searchPlayer()">Search</button>
+      <label>Sort by:
+        <select id="search-threshold" onchange="searchPlayer()">
+          <option value="6plus">6+ Points</option>
+          <option value="5plus">5+ Points</option>
+        </select>
+      </label>
+    </div>
+    <h2 id="search-gw-label"></h2>
+    <div id="search-results-container"></div>
+  </div>
+
+  <!-- TEAM OF THE WEEK VIEW -->
+  <div id="view-totw" class="view">
+    <div class="controls">
+      <button onclick="loadTeamOfWeek('6plus')">6+ Points</button>
+      <button onclick="loadTeamOfWeek('5plus')">5+ Points</button>
+    </div>
+    <h2 id="totw-gw-label"></h2>
+    <div id="totw-container"></div>
+  </div>
 
   <script>
     const API_URL = "https://fpl-predictor-api-3njm.onrender.com";
     const POSITIONS = ['GK', 'DEF', 'MID', 'FWD'];
     let currentThreshold = '6plus';
+
+    function switchView(view) {
+      document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('nav.views button').forEach(el => el.classList.remove('active'));
+      document.getElementById(`view-${view}`).classList.add('active');
+      document.getElementById(`nav-${view}`).classList.add('active');
+    }
 
     function renderTable(predictions, threshold, title) {
       const rows = predictions.map(p => {
@@ -71,7 +124,6 @@
 
       try {
         if (positionFilter !== 'ALL') {
-          // Specific position picked — one fetch, one table, ignore the "group by" checkbox
           const res = await fetch(`${API_URL}/predictions/latest?threshold=${threshold}&position=${positionFilter}&limit=${limit}`);
           const data = await res.json();
           document.getElementById('gw-label').innerText = `Gameweek ${data.gameweek}`;
@@ -90,6 +142,80 @@
         }
       } catch (err) {
         document.getElementById('gw-label').innerText = 'Failed to load predictions';
+        console.error(err);
+      }
+    }
+
+    async function searchPlayer() {
+      const name = document.getElementById('search-input').value.trim();
+      const threshold = document.getElementById('search-threshold').value;
+      const container = document.getElementById('search-results-container');
+      const label = document.getElementById('search-gw-label');
+
+      if (name.length < 2) {
+        container.innerHTML = '<p>Enter at least 2 characters to search.</p>';
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_URL}/predictions/search?name=${encodeURIComponent(name)}&threshold=${threshold}`);
+        if (!res.ok) throw new Error(await res.text());
+        const data = await res.json();
+        label.innerText = `Gameweek ${data.gameweek}`;
+
+        if (data.matches.length === 0) {
+          container.innerHTML = `<p>No players found matching "${name}".</p>`;
+          return;
+        }
+        container.innerHTML = renderTable(data.matches, threshold, `Results for "${name}"`);
+      } catch (err) {
+        label.innerText = 'Search failed';
+        container.innerHTML = '';
+        console.error(err);
+      }
+    }
+
+    function renderTeamOfWeek(data) {
+      const byPos = { GK: [], DEF: [], MID: [], FWD: [] };
+      data.players.forEach(p => byPos[p.position].push(p));
+
+      const probKey = `prob_${data.threshold}`;
+      const rowHtml = (players) => `
+        <div class="totw-row">
+          ${players.map(p => `
+            <div class="totw-card">
+              <div>${p.name}</div>
+              <div>${p.team}</div>
+              <div>${p.was_home ? 'vs' : '@'} ${p.opponent_team_name}</div>
+              <div class="prob">${(p[probKey] * 100).toFixed(1)}%</div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+
+      return `
+        <div class="totw-formation">Formation: ${data.formation} &middot; Total expected probability: ${data.total_expected_probability.toFixed(2)}</div>
+        <div class="totw-pitch">
+          ${rowHtml(byPos.FWD)}
+          ${rowHtml(byPos.MID)}
+          ${rowHtml(byPos.DEF)}
+          ${rowHtml(byPos.GK)}
+        </div>
+      `;
+    }
+
+    async function loadTeamOfWeek(threshold) {
+      const label = document.getElementById('totw-gw-label');
+      const container = document.getElementById('totw-container');
+      try {
+        const res = await fetch(`${API_URL}/team-of-week?threshold=${threshold}`);
+        if (!res.ok) throw new Error(await res.text());
+        const data = await res.json();
+        label.innerText = `Gameweek ${data.gameweek}`;
+        container.innerHTML = renderTeamOfWeek(data);
+      } catch (err) {
+        label.innerText = 'Failed to load team of the week';
+        container.innerHTML = '';
         console.error(err);
       }
     }
