@@ -33,6 +33,13 @@ def load_team_lookup(base_path, seasons=SEASONS):
         team_lookup_dfs.append(t)
     return pd.concat(team_lookup_dfs, ignore_index=True)
 
+def _to_float(value):
+    if value is None:
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
 
 def _get_with_retry(session, url, max_retries=3):
     for attempt in range(max_retries):
@@ -106,11 +113,11 @@ def fetch_current_season_gameweek_data(season_label='2026-27'):
                     'was_home': gw['was_home'],
                     'total_points': gw['total_points'],
                     'minutes': gw['minutes'],
-                    'expected_goals': gw.get('expected_goals'),
-                    'expected_assists': gw.get('expected_assists'),
-                    'expected_goal_involvements': gw.get('expected_goal_involvements'),
-                    'expected_goals_conceded': gw.get('expected_goals_conceded'),
-                    'defensive_contribution': gw.get('defensive_contribution'),
+                    'expected_goals': _to_float(gw.get('expected_goals')),
+                    'expected_assists': _to_float(gw.get('expected_assists')),
+                    'expected_goal_involvements': _to_float(gw.get('expected_goal_involvements')),
+                    'expected_goals_conceded': _to_float(gw.get('expected_goals_conceded')),
+                    'defensive_contribution': _to_float(gw.get('defensive_contribution')),
                     'kickoff_time': gw['kickoff_time'],
                     'team_h_score': gw['team_h_score'],
                     'team_a_score': gw['team_a_score'],
