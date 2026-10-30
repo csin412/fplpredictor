@@ -8,8 +8,6 @@ from scipy.optimize import brentq
 TEAM_NAME_MAP = {
     'Man United': 'Man Utd',
     'Tottenham': 'Spurs',
-    'Man Utd': 'Man United',
-    'Spurs': 'Tottenham',
     'Sheffield United': 'Sheffield Utd'
 }
 
